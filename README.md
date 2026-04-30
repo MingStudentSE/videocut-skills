@@ -182,9 +182,25 @@ videocut/
 | Node.js 18+ | 运行脚本 | `brew install node` |
 | FFmpeg | 音视频处理 | `brew install ffmpeg` |
 | Python 3.8+ | 模型运行 | 系统自带 |
-| 火山引擎 API | 语音转录 | [申请 Key](https://console.volcengine.com/) |
+| 火山引擎 API | 语音转录（大模型录音文件极速版） | [申请 Key](https://console.volcengine.com/) |
 
 ## 常见问题
+
+### Q: 火山引擎使用哪个接口？
+
+剪口播脚本使用 v3 大模型录音文件极速版：
+
+```text
+POST https://openspeech.bytedance.com/api/v3/auc/bigmodel/recognize/flash
+X-Api-Resource-Id: volc.bigasr.auc_turbo
+```
+
+`.env` 需要配置：
+
+```bash
+VOLCENGINE_API_KEY=your_api_key_here
+VOLCENGINE_RESOURCE_ID=volc.bigasr.auc_turbo
+```
 
 ### Q: 火山引擎转录超时？
 

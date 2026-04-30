@@ -23,6 +23,7 @@ const allWords = [];
 for (const utterance of result.utterances) {
   if (utterance.words) {
     for (const word of utterance.words) {
+      if (word.start_time < 0 || word.end_time < 0) continue;
       allWords.push({
         text: word.text,
         start: word.start_time / 1000,

@@ -56,7 +56,7 @@ output/
     ↓
 2. 上传获取公网 URL (uguu.se)
     ↓
-3. 火山引擎 API 转录
+3. 火山引擎大模型录音文件极速版 API 转录
     ↓
 4. 生成字级别字幕 (subtitles_words.json)
     ↓
@@ -102,6 +102,15 @@ SKILL_DIR="/Users/chengfeng/Desktop/AIos/剪辑Agent/.claude/skills/剪口播"
 "$SKILL_DIR/scripts/volcengine_transcribe.sh" "https://h.uguu.se/xxx.mp3"
 # 输出: volcengine_result.json
 ```
+
+转录脚本使用火山引擎 v3 大模型录音文件极速版接口：
+
+```text
+POST https://openspeech.bytedance.com/api/v3/auc/bigmodel/recognize/flash
+X-Api-Resource-Id: volc.bigasr.auc_turbo
+```
+
+脚本会同时保留原始响应 `volcengine_raw_result.json`，并生成兼容后续流程的 `volcengine_result.json`。
 
 ### 步骤 4: 生成字幕
 
@@ -298,4 +307,5 @@ node "$SKILL_DIR/scripts/review_server.js" 8899 "$VIDEO_PATH"
 cd /Users/chengfeng/Desktop/AIos/剪辑Agent/.claude/skills
 cp .env.example .env
 # 编辑 .env 填入 VOLCENGINE_API_KEY=xxx
+# 默认资源: VOLCENGINE_RESOURCE_ID=volc.bigasr.auc_turbo
 ```

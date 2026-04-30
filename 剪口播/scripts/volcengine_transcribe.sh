@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 火山引擎语音识别（异步模式）
+# 火山引擎语音识别（大模型录音文件极速版）
 #
 # 用法: ./volcengine_transcribe.sh <audio_url>
 # 输出: volcengine_result.json
@@ -23,84 +23,69 @@ if [ ! -f "$ENV_FILE" ]; then
   exit 1
 fi
 
-API_KEY=$(grep VOLCENGINE_API_KEY "$ENV_FILE" | cut -d'=' -f2)
+API_KEY=$(grep '^VOLCENGINE_API_KEY=' "$ENV_FILE" | cut -d'=' -f2-)
+RESOURCE_ID=$(grep '^VOLCENGINE_RESOURCE_ID=' "$ENV_FILE" | cut -d'=' -f2-)
 
-echo "🎤 提交火山引擎转录任务..."
-echo "音频 URL: $AUDIO_URL"
-
-# 读取热词词典
-DICT_FILE="$(dirname "$SCRIPT_DIR")/字幕/词典.txt"
-HOT_WORDS=""
-if [ -f "$DICT_FILE" ]; then
-  # 把词典转换成 JSON 数组格式
-  HOT_WORDS=$(cat "$DICT_FILE" | grep -v '^$' | while read word; do echo "\"$word\""; done | tr '\n' ',' | sed 's/,$//')
-  echo "📖 加载热词: $(cat "$DICT_FILE" | grep -v '^$' | wc -l | tr -d ' ') 个"
-fi
-
-# 构建请求体
-if [ -n "$HOT_WORDS" ]; then
-  REQUEST_BODY="{\"url\": \"$AUDIO_URL\", \"hot_words\": [$HOT_WORDS]}"
-else
-  REQUEST_BODY="{\"url\": \"$AUDIO_URL\"}"
-fi
-
-# 步骤1: 提交任务
-SUBMIT_RESPONSE=$(curl -s -L -X POST "https://openspeech.bytedance.com/api/v1/vc/submit?language=zh-CN&use_itn=True&use_capitalize=True&max_lines=1&words_per_line=15" \
-  -H "Accept: */*" \
-  -H "x-api-key: $API_KEY" \
-  -H "Connection: keep-alive" \
-  -H "content-type: application/json" \
-  -d "$REQUEST_BODY")
-
-# 提取任务 ID
-TASK_ID=$(echo "$SUBMIT_RESPONSE" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
-
-if [ -z "$TASK_ID" ]; then
-  echo "❌ 提交失败，响应:"
-  echo "$SUBMIT_RESPONSE"
+if [ -z "$API_KEY" ]; then
+  echo "❌ VOLCENGINE_API_KEY 未配置"
   exit 1
 fi
 
-echo "✅ 任务已提交，ID: $TASK_ID"
-echo "⏳ 等待转录完成..."
+if [ -z "$RESOURCE_ID" ]; then
+  RESOURCE_ID="volc.bigasr.auc_turbo"
+fi
 
-# 步骤2: 轮询结果
-MAX_ATTEMPTS=120  # 最多等待 10 分钟（每 5 秒查一次）
-ATTEMPT=0
+echo "🎤 提交火山引擎转录任务..."
+echo "音频 URL: $AUDIO_URL"
+echo "资源 ID: $RESOURCE_ID"
 
-while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-  sleep 5
-  ATTEMPT=$((ATTEMPT + 1))
+REQUEST_ID=$(uuidgen 2>/dev/null || node -e "console.log(require('crypto').randomUUID())")
 
-  QUERY_RESPONSE=$(curl -s -L -X GET "https://openspeech.bytedance.com/api/v1/vc/query?id=$TASK_ID" \
-    -H "Accept: */*" \
-    -H "x-api-key: $API_KEY" \
-    -H "Connection: keep-alive")
+REQUEST_BODY=$(node -e "
+const url = process.argv[1];
+console.log(JSON.stringify({
+  user: { uid: 'videocut' },
+  audio: { url },
+  request: {
+    model_name: 'bigmodel',
+    enable_itn: true,
+    enable_punc: true,
+    enable_ddc: true,
+    show_utterances: true
+  }
+}));
+" "$AUDIO_URL")
 
-  # 检查状态
-  STATUS=$(echo "$QUERY_RESPONSE" | grep -o '"code":[0-9]*' | head -1 | cut -d':' -f2)
+RESPONSE=$(curl -s -L -X POST "https://openspeech.bytedance.com/api/v3/auc/bigmodel/recognize/flash" \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: $API_KEY" \
+  -H "X-Api-Resource-Id: $RESOURCE_ID" \
+  -H "X-Api-Request-Id: $REQUEST_ID" \
+  -H "X-Api-Sequence: -1" \
+  -d "$REQUEST_BODY")
 
-  if [ "$STATUS" = "0" ]; then
-    # 成功完成
-    echo "$QUERY_RESPONSE" > volcengine_result.json
-    echo "✅ 转录完成，已保存 volcengine_result.json"
+if [ -z "$RESPONSE" ]; then
+  echo "❌ 转录失败：接口无响应"
+  exit 1
+fi
 
-    # 显示统计
-    UTTERANCES=$(echo "$QUERY_RESPONSE" | grep -o '"text"' | wc -l)
-    echo "📝 识别到 $UTTERANCES 段语音"
-    exit 0
-  elif [ "$STATUS" = "1000" ]; then
-    # 处理中
-    echo -n "."
-  else
-    # 其他错误
-    echo ""
-    echo "❌ 转录失败，响应:"
-    echo "$QUERY_RESPONSE"
-    exit 1
-  fi
-done
+echo "$RESPONSE" > volcengine_raw_result.json
 
-echo ""
-echo "❌ 超时，任务未完成"
-exit 1
+node -e "
+const fs = require('fs');
+const raw = JSON.parse(fs.readFileSync('volcengine_raw_result.json', 'utf8'));
+if (!raw.result || !Array.isArray(raw.result.utterances)) {
+  console.error('❌ 转录失败，响应:');
+  console.error(JSON.stringify(raw));
+  process.exit(1);
+}
+const out = {
+  utterances: raw.result.utterances,
+  text: raw.result.text || '',
+  audio_info: raw.audio_info || {},
+  request_id: '$REQUEST_ID'
+};
+fs.writeFileSync('volcengine_result.json', JSON.stringify(out, null, 2));
+console.log('✅ 转录完成，已保存 volcengine_result.json');
+console.log('📝 识别到 ' + out.utterances.length + ' 段语音');
+"
