@@ -1,5 +1,17 @@
 skills
 Claude
+Claude Code
+CC Switch
+Homebrew
+winget
+PowerShell
+Token Plan
+Coding Plan
+Mimo
+API Key
+Base URL
+DMG
+macOS
 iPhone
 GitHub
 API
@@ -18,4 +30,4 @@ DeepSeek
 分镜
 音画同步
 音画同出
-首帧 
+首帧

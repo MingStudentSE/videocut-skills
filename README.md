@@ -36,13 +36,13 @@
 
 ```bash
 # 克隆到 Claude Code skills 目录
-git clone https://github.com/Ceeon/videocut-skills.git ~/.claude/skills/videocut
+git clone https://github.com/Ceeon/videocut-skills.git ~/.codex/skills/videocut
 ```
 
 ### 2. 配置 API Key
 
 ```bash
-cd ~/.claude/skills/videocut
+cd ~/.codex/skills/videocut
 cp .env.example .env
 # 编辑 .env，填入火山引擎 API Key
 ```

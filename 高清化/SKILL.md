@@ -65,7 +65,7 @@ VIDEO=$(find "$OUTPUT_DIR/剪口播/3_审核" -name "*_cut.mp4" -type f 2>/dev/n
 ### 步骤 1-4: 执行高清化
 
 ```bash
-SKILL_DIR="/Users/chengfeng/Desktop/AIos/剪辑Agent/.claude/skills/高清化"
+SKILL_DIR="/Users/chengfeng/Desktop/AIos/剪辑Agent/.codex/skills/高清化"
 
 # 简单用法：自动检测参数，1.2x 码率，2-pass
 bash "$SKILL_DIR/scripts/hd_export.sh" input.mp4

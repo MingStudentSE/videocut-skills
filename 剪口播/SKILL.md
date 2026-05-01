@@ -37,6 +37,8 @@ output/
     │   ├── 2_分析/
     │   │   ├── readable.txt
     │   │   ├── auto_selected.json
+    │   │   ├── 静音分析.md
+    │   │   ├── 语义分析.md
     │   │   └── 口误分析.md
     │   └── 3_审核/
     │       ├── review.html
@@ -98,7 +100,7 @@ curl -s -F "files[]=@audio.mp3" https://uguu.se/upload
 # 返回: {"success":true,"files":[{"url":"https://h.uguu.se/xxx.mp3"}]}
 
 # 3. 调用火山引擎 API
-SKILL_DIR="/Users/chengfeng/Desktop/AIos/剪辑Agent/.claude/skills/剪口播"
+SKILL_DIR="/Users/chengfeng/Desktop/AIos/剪辑Agent/.codex/skills/剪口播"
 "$SKILL_DIR/scripts/volcengine_transcribe.sh" "https://h.uguu.se/xxx.mp3"
 # 输出: volcengine_result.json
 ```
@@ -179,20 +181,22 @@ sentences.forEach((s, i) => {
 #### 5.4 脚本自动标记静音（必须先执行）
 
 ```bash
-node -e "
-const words = require('../1_转录/subtitles_words.json');
-const selected = [];
-words.forEach((w, i) => {
-  if (w.isGap && (w.end - w.start) >= 0.2) selected.push(i);
-});
-require('fs').writeFileSync('auto_selected.json', JSON.stringify(selected, null, 2));
-console.log('≥0.2s静音数量:', selected.length);
-"
+node "$SKILL_DIR/scripts/generate_auto_selected.js" ../1_转录/subtitles_words.json . ../1_转录/volcengine_result.json
 ```
 
-→ 输出 `auto_selected.json`（只含静音 idx）
+→ 输出 `auto_selected.json` 和 `静音分析.md`。
 
-#### 5.5 AI 分析口误（追加到 auto_selected.json）
+**听感原则**：同一句内部 ≥0.18s 停顿默认删除；≤0.8s 的句间停顿默认保留；句间 0.8-1.2s 只写入分析报告，不自动删除；≥1.2s 的连续静音块整段预选删除。句中/句间判断优先使用火山转录的 `utterances`，字幕生成脚本会把长静音拆成多个 1s gap，必须按连续 gap run 合并判断，不能逐个 1s 格子判断。
+
+#### 5.5 自动语义筛查（必须执行，追加到 auto_selected.json）
+
+```bash
+node "$SKILL_DIR/scripts/generate_semantic_selected.js" ../1_转录/subtitles_words.json auto_selected.json .
+```
+
+→ 追加残句、相邻重说、孤立卡顿词、句内重复候选，并输出 `语义分析.md`。
+
+#### 5.6 AI 复核口误（需要时人工追加到 auto_selected.json）
 
 **检测规则（按优先级）**：
 
@@ -304,7 +308,7 @@ node "$SKILL_DIR/scripts/review_server.js" 8899 "$VIDEO_PATH"
 ### 火山引擎 API Key
 
 ```bash
-cd /Users/chengfeng/Desktop/AIos/剪辑Agent/.claude/skills
+cd /Users/chengfeng/Desktop/AIos/剪辑Agent/.codex/skills
 cp .env.example .env
 # 编辑 .env 填入 VOLCENGINE_API_KEY=xxx
 # 默认资源: VOLCENGINE_RESOURCE_ID=volc.bigasr.auc_turbo

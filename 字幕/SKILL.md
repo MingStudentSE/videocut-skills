@@ -78,7 +78,7 @@ curl -s -F "files[]=@audio.mp3" https://uguu.se/upload
 转录脚本会**自动读取词典**作为热词，提高识别准确率：
 
 ```bash
-# 词典位置: /Users/chengfeng/Desktop/AIos/剪辑Agent/.claude/skills/字幕/词典.txt
+# 词典位置: /Users/chengfeng/Desktop/AIos/剪辑Agent/.codex/skills/字幕/词典.txt
 # 脚本会自动加载
 
 bash ../剪口播/scripts/volcengine_transcribe.sh "https://o.uguu.se/xxxxx.mp3"
@@ -131,6 +131,18 @@ fs.writeFileSync('subtitles_with_time.json', JSON.stringify(subtitles, null, 2))
 | IT就 | Agent就 | 发音相似 |
 | edge的叉100 | Agentx100 | 误识别 |
 | cloud code | Claude Code | 发音相似 |
+| Cloth Co / Cloth Code | Claude Code | 发音相似 |
+| 克罗克 / 克洛蔻 | Claude Code | 同音误识别 |
+| 克洛 / CLOUD / cloud | Claude | 同音/英文误识别 |
+| c switch / cici switch | CC Switch | 产品名误识别 |
+| cody | Claude Code | 发音相似 |
+| d dmg / DMA DMG | DMG | 安装包名误识别 |
+| tokenplan / token plan | Token Plan | 产品名格式 |
+| coding plan | Coding Plan | 产品名格式 |
+| APIK / API key | API Key | 产品名格式 |
+| MIMO | Mimo | 产品名大小写 |
+| win winget | winget | 命令名误拆 |
+| 刚刚 word / word | claude | 命令名误识别，需结合上下文判断 |
 | Schill/skill | skills | 发音相似 |
 | 剪口拨/剪口波 | 剪口播 | 同音字 |
 | 自净化/资金化 | 自进化 | 同音字 |
@@ -251,6 +263,11 @@ output/YYYY-MM-DD_视频名/字幕/
 - **严重教训：原稿没有 = 删除**：原稿里没有的内容，说明剪口播阶段已经剪掉，必须删除。不能因为"口播有说"就自作主张保留
 - **人名必查**：词典热词不保证 100% 识别。案例："成峰"在词典里，火山引擎仍识别成"乘风"，Agent 校对时漏掉了
 - 新增词典词条：Kling、DeepSeek、分镜、音画同步、音画同出、首帧
+
+### 2026-05-01
+- Claude Code 教程类视频必须重点校对英文产品名和命令名。火山引擎容易把 `Claude Code` 识别成 `Cloth Co`、`克罗克`、`克洛蔻`、`cody`，把 `CC Switch` 识别成 `c switch` / `cici switch`，把 `Token Plan` / `Coding Plan` / `API Key` 拆错大小写。
+- 校对这类术语是字幕流程的固定动作，不是可选优化。只改实际口播中的误识别，不从脚本补入视频里没说的话。
+- 新增词典词条：Claude Code、CC Switch、Homebrew、winget、PowerShell、Token Plan、Coding Plan、Mimo、API Key、DMG、macOS、Base URL。
 
 ### 2026-01-31
 - 火山引擎支持热词，已集成到转录脚本

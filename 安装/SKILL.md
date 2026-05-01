@@ -42,10 +42,10 @@ pos: 前置 skill，首次使用前运行
 2. 开通语音识别服务
 3. 获取 API Key
 
-配置到项目目录 `.claude/skills/.env`：
+配置到项目目录 `.codex/skills/.env`：
 
 ```bash
-# 文件路径：剪辑Agent/.claude/skills/.env
+# 文件路径：剪辑Agent/.codex/skills/.env
 VOLCENGINE_API_KEY=your_api_key_here
 ```
 
@@ -75,8 +75,8 @@ ffmpeg -version
 ### 2. 配置 API Key
 
 ```bash
-# 在项目 .claude/skills/ 目录下创建 .env 文件
-echo "VOLCENGINE_API_KEY=your_key" >> .claude/skills/.env
+# 在项目 .codex/skills/ 目录下创建 .env 文件
+echo "VOLCENGINE_API_KEY=your_key" >> .codex/skills/.env
 ```
 
 ### 3. 验证环境
@@ -89,7 +89,7 @@ node -v
 ffmpeg -version
 
 # 检查 API Key（在项目目录下执行）
-cat .claude/skills/.env | grep VOLCENGINE
+cat .codex/skills/.env | grep VOLCENGINE
 ```
 
 ## 常见问题

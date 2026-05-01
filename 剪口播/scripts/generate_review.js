@@ -141,6 +141,8 @@ const html = `<!DOCTYPE html>
 
     .content {
       line-height: 2.5;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     .word {
@@ -150,6 +152,9 @@ const html = `<!DOCTYPE html>
       border-radius: 3px;
       cursor: pointer;
       transition: all 0.15s;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
     }
 
     .word:hover { background: #333; }
@@ -167,11 +172,18 @@ const html = `<!DOCTYPE html>
       border-radius: 3px;
       font-size: 12px;
       cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
     }
     .gap:hover { background: #444; }
     .gap.selected { background: #f44336; color: white; }
     .gap.ai-selected { background: #ff9800; color: white; }
     .gap.ai-selected.selected { background: #f44336; }
+    .content.dragging .word,
+    .content.dragging .gap {
+      transition: none;
+    }
 
     .stats {
       padding: 10px;
@@ -298,6 +310,8 @@ const html = `<!DOCTYPE html>
     let isSelecting = false;
     let selectStart = -1;
     let selectMode = 'add'; // 'add' or 'remove'
+    let isShiftPressed = false;
+    let suppressNextClick = false;
 
     // 格式化时间 (用于播放器显示)
     function formatTime(sec) {
@@ -340,22 +354,28 @@ const html = `<!DOCTYPE html>
 
         // 单击跳转播放
         div.onclick = (e) => {
-          if (!isSelecting) {
-            player.currentTime = word.start;
+          if (suppressNextClick || e.shiftKey || isShiftPressed) {
+            suppressNextClick = false;
+            e.preventDefault();
+            return;
           }
+          if (!isSelecting) player.currentTime = word.start;
         };
 
         // 双击选中/取消
         div.ondblclick = () => toggle(i);
 
-        // Shift+拖动选择/取消
-        div.onmousedown = (e) => {
-          if (e.shiftKey) {
-            isSelecting = true;
-            selectStart = i;
-            selectMode = selected.has(i) ? 'remove' : 'add';
-            e.preventDefault();
-          }
+        // Shift+拖动选择/取消。用 Pointer Events 兼容 mac 触控板/鼠标。
+        div.onpointerdown = (e) => {
+          if (!e.shiftKey && !isShiftPressed) return;
+          isSelecting = true;
+          suppressNextClick = true;
+          selectStart = i;
+          selectMode = selected.has(i) ? 'remove' : 'add';
+          content.classList.add('dragging');
+          applyRangeSelection(i);
+          div.setPointerCapture?.(e.pointerId);
+          e.preventDefault();
         };
 
         content.appendChild(div);
@@ -365,33 +385,60 @@ const html = `<!DOCTYPE html>
       updateStats();
     }
 
-    // Shift+拖动多选/取消
-    content.addEventListener('mousemove', e => {
-      if (!isSelecting) return;
-      const target = e.target.closest('[data-index]');
-      if (!target) return;
+    function setElementSelected(i, shouldSelect) {
+      if (shouldSelect) {
+        selected.add(i);
+        elements[i].classList.add('selected');
+        elements[i].classList.remove('ai-selected');
+      } else {
+        selected.delete(i);
+        elements[i].classList.remove('selected');
+        if (autoSelected.has(i)) elements[i].classList.add('ai-selected');
+      }
+    }
 
-      const i = parseInt(target.dataset.index);
-      const min = Math.min(selectStart, i);
-      const max = Math.max(selectStart, i);
+    function applyRangeSelection(toIndex) {
+      if (selectStart < 0 || toIndex < 0) return;
+      const min = Math.min(selectStart, toIndex);
+      const max = Math.max(selectStart, toIndex);
 
       for (let j = min; j <= max; j++) {
-        if (selectMode === 'add') {
-          selected.add(j);
-          elements[j].classList.add('selected');
-          elements[j].classList.remove('ai-selected');
-        } else {
-          selected.delete(j);
-          elements[j].classList.remove('selected');
-          if (autoSelected.has(j)) elements[j].classList.add('ai-selected');
-        }
+        setElementSelected(j, selectMode === 'add');
       }
       updateStats();
+    }
+
+    function getIndexFromPoint(e) {
+      const target = document.elementFromPoint(e.clientX, e.clientY)?.closest?.('[data-index]');
+      if (!target || !content.contains(target)) return -1;
+      return parseInt(target.dataset.index);
+    }
+
+    // Shift+拖动多选/取消
+    document.addEventListener('pointermove', e => {
+      if (!isSelecting) return;
+      const i = getIndexFromPoint(e);
+      if (i < 0) return;
+      applyRangeSelection(i);
+      e.preventDefault();
     });
 
-    document.addEventListener('mouseup', () => {
-      if (isSelecting) rebuildSkipIntervals();
+    document.addEventListener('pointerup', () => {
+      if (isSelecting) {
+        rebuildSkipIntervals();
+        content.classList.remove('dragging');
+      }
       isSelecting = false;
+      selectStart = -1;
+    });
+
+    document.addEventListener('pointercancel', () => {
+      if (isSelecting) {
+        rebuildSkipIntervals();
+        content.classList.remove('dragging');
+      }
+      isSelecting = false;
+      selectStart = -1;
     });
 
     function toggle(i) {
@@ -611,6 +658,7 @@ const html = `<!DOCTYPE html>
 
     // 键盘快捷键
     document.addEventListener('keydown', e => {
+      if (e.key === 'Shift') isShiftPressed = true;
       if (e.code === 'Space') {
         e.preventDefault();
         togglePlay();
@@ -619,6 +667,10 @@ const html = `<!DOCTYPE html>
       } else if (e.code === 'ArrowRight') {
         player.currentTime = player.currentTime + (e.shiftKey ? 5 : 1);
       }
+    });
+
+    document.addEventListener('keyup', e => {
+      if (e.key === 'Shift') isShiftPressed = false;
     });
 
     render();
