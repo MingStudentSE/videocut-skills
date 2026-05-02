@@ -1,0 +1,7 @@
+interface:
+  display_name: "字幕"
+  short_description: "生成、校对并烧录口播视频字幕"
+  default_prompt: "Use $videocut:字幕 to generate, correct, review, and burn subtitles for this video."
+
+policy:
+  allow_implicit_invocation: true

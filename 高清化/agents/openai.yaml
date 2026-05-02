@@ -1,0 +1,7 @@
+interface:
+  display_name: "高清化"
+  short_description: "按原片参数导出口播视频高清版"
+  default_prompt: "Use $videocut:高清化 to export a higher-quality version of this edited video."
+
+policy:
+  allow_implicit_invocation: true

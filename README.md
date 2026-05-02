@@ -1,228 +1,316 @@
 # Videocut Skills
 
-> 用 Claude Code Skills 构建的视频剪辑 Agent，专为口播视频设计
+> 面向口播视频的 Codex / Claude Code Skills 剪辑流水线。  
+> 从语音转录、热词纠错、口误识别、网页审核到 FFmpeg 精确剪辑，帮助创作者把长口播素材快速整理成可发布版本。
 
-## 为什么做这个？
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Upstream](https://img.shields.io/badge/Upstream-Ceeon%2Fvideocut--skills-blue.svg)](https://github.com/Ceeon/videocut-skills)
+[![Volcengine](https://img.shields.io/badge/ASR-%E8%B1%86%E5%8C%85%E5%BD%95%E9%9F%B3%E6%96%87%E4%BB%B6%E8%AF%86%E5%88%AB%202.0-7c3aed.svg)](https://console.volcengine.com/speech/new/overview)
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933.svg)](https://nodejs.org/)
+[![FFmpeg](https://img.shields.io/badge/FFmpeg-required-007808.svg)](https://ffmpeg.org/)
 
-剪映的"智能剪口播"有两个痛点：
-1. **无法理解语义**：重复说的句子、说错后纠正的内容，它识别不出来
-2. **字幕质量差**：专业术语（Claude Code、MCP、API）经常识别错误
+[功能特性](#功能特性) · [快速开始](#快速开始) · [火山引擎配置](#火山引擎配置) · [使用流程](#使用流程) · [项目结构](#项目结构) · [许可](#许可)
 
-这个 Agent 用 Claude 的语义理解能力解决第一个问题，用自定义词典解决第二个问题。
+## 项目定位
 
-## 效果演示
+`videocut-skills` 是一组面向 AI Agent 的本地 Skills，目标不是做一个完整桌面剪辑软件，而是把口播剪辑里最容易重复出错的步骤沉淀成可执行流水线：
 
-**输入**：19 分钟口播原片（各种口误、卡顿、重复）
+- 用火山引擎「豆包录音文件识别模型 2.0」生成带字级时间戳的转录结果。
+- 用本地词典作为热词，降低个人词汇或专业词误识别概率。
+- 用规则和语义分析预选静音、重复、卡顿、重说纠正和残句。
+- 生成本地网页审核页，让用户最后确认要删除的片段。
+- 用 FFmpeg 按审核结果输出剪辑后视频，并支持字幕和高清化后处理。
 
-**输出**：
-- 自动识别 608 处问题（静音 114 + 口误/重复 494）
-- 剪辑后视频 72MB
-- 全程 AI 辅助，人工只需确认
+## Fork 说明
 
-## 核心功能
+本仓库基于 [Ceeon/videocut-skills](https://github.com/Ceeon/videocut-skills) fork 并继续改造。上游项目 README 标注为 MIT License，本 fork 继续按 MIT License 分发，并保留上游来源说明。
 
-| 功能 | 说明 | 对比剪映 |
-|------|------|----------|
-| **语义理解** | AI 逐句分析，识别重说/纠正/卡顿 | 只能模式匹配 |
-| **静音检测** | >0.3s 自动标记，可调阈值 | 固定阈值 |
-| **重复句检测** | 相邻句开头≥5字相同 → 删前保后 | 无此功能 |
-| **句内重复** | "好我们接下来好我们接下来做" → 删重复部分 | 无此功能 |
-| **词典纠错** | 自定义专业术语词典 | 无此功能 |
-| **自更新** | 记住你的偏好，越用越准 | 无此功能 |
+本 fork 的主要修改记录在 [CHANGES_FROM_UPSTREAM.md](CHANGES_FROM_UPSTREAM.md)，包括：
+
+- 将 ASR 接口切换为火山引擎「豆包录音文件识别模型 2.0」标准版提交/查询接口。
+- 实现 `字幕/词典.txt` 热词读取，并随转录请求传给火山引擎。
+- 收敛剪口播主流程，新增 `剪口播/scripts/run_pipeline.sh`。
+- 新增输出校验、schema 说明和样例转录 fixture。
+- 抽象音频上传器，并补充第三方上传隐私说明。
+- 修复网页审核页在 macOS 上按住 Shift 批量选中的交互问题。
+- 完善 README、安装说明、Skill 导航和 `agents/openai.yaml` 元数据。
+
+## 功能特性
+
+| 模块 | 能力 | 主要产物 |
+| --- | --- | --- |
+| 剪口播 | 提取音频、上传、火山转录、静音/口误/重复预选、网页审核、执行剪辑 | `volcengine_result.json`、`subtitles_words.json`、`auto_selected.json`、`delete_segments.json`、剪辑后视频 |
+| 字幕 | 生成字幕、词典纠错、审核与烧录 | 字幕文件、带字幕视频 |
+| 高清化 | 2-pass 编码、锐化、匹配原片参数导出 | 高清 MP4 |
+| 安装 | 检查 Node.js、FFmpeg、Python 和本地依赖 | 环境检查结果 |
+| 自进化 | 记录用户剪辑偏好，更新规则文件 | 用户习惯规则 |
+
+## 工作流
+
+```mermaid
+flowchart LR
+  A["输入口播视频"] --> B["提取音频"]
+  B --> C["上传或使用已有音频 URL"]
+  C --> D["火山引擎 ASR"]
+  D --> E["字级字幕与分析输入"]
+  E --> F["静音和语义预选"]
+  F --> G["本地网页审核"]
+  G --> H["人工确认删除片段"]
+  H --> I["FFmpeg 精确剪辑"]
+  I --> J["字幕 / 高清化后处理"]
+```
 
 ## 快速开始
 
-### 1. 安装 Skills
+### 1. 安装到 Skills 目录
 
 ```bash
-# 克隆到 Claude Code skills 目录
-git clone https://github.com/Ceeon/videocut-skills.git ~/.codex/skills/videocut
+mkdir -p ~/.codex/skills
+git clone https://github.com/MingStudentSE/videocut-skills.git ~/.codex/skills/videocut-skills
+cd ~/.codex/skills/videocut-skills
 ```
 
-### 2. 配置 API Key
+### 2. 准备环境变量
 
 ```bash
-cd ~/.codex/skills/videocut
 cp .env.example .env
-# 编辑 .env，填入火山引擎 API Key
 ```
 
-### 3. 安装环境
+编辑 `.env`，至少填入：
 
-打开 Claude Code，输入：
-
+```bash
+VOLCENGINE_API_KEY=你的_API_Key
+VOLCENGINE_RESOURCE_ID=volc.seedasr.auc
+VIDEO_UPLOAD_PROVIDER=uguu
 ```
-/videocut:安装
+
+### 3. 检查依赖
+
+在 Codex 或 Claude Code 中调用安装 Skill：
+
+```text
+$videocut:安装
 ```
 
-AI 会自动：
-- 检查 Python、FFmpeg、Node.js
-- 安装 FunASR（口误识别模型，约 2GB）
-- 安装 Whisper large-v3（字幕模型，约 3GB）
+也可以手动确认核心依赖：
+
+```bash
+node --version
+ffmpeg -version
+python3 --version
+```
+
+### 4. 运行剪口播流水线
+
+在 Agent 中直接说：
+
+```text
+$videocut:剪口播 /path/to/video.mp4
+```
+
+或在命令行运行确定性入口脚本：
+
+```bash
+"./剪口播/scripts/run_pipeline.sh" "/path/to/video.mp4"
+```
+
+完成后会生成本地审核页：
+
+```bash
+node "./剪口播/scripts/review_server.js" 8899 "/path/to/video.mp4"
+```
+
+然后打开：
+
+```text
+http://localhost:8899/review.html
+```
+
+## 火山引擎配置
+
+### 开通模型能力
+
+1. 打开 [火山引擎豆包语音服务控制台](https://console.volcengine.com/speech/new/overview)。
+2. 在「快速开始」区域点击「查看详情」，进入「快捷 API 接入」弹窗。
+
+![火山引擎豆包语音服务入口：点击查看详情](docs/images/volcengine-speech-api/01-overview-click-detail.png)
+
+3. 在 `STEP2 快速接入测试` 中选择模型并开通，模型选择「豆包录音文件识别模型 2.0」。
+
+![快捷 API 接入：选择豆包录音文件识别模型 2.0](docs/images/volcengine-speech-api/02-select-recording-model-2.png)
+
+4. 回到 `STEP1 获取 API Key`，创建 API Key 或点击已有 Key 的「选择使用」。
+
+![快捷 API 接入：创建或选择 API Key](docs/images/volcengine-speech-api/03-create-or-select-api-key.png)
+
+5. 把选中的 API Key 交给本地 Agent 配置到 `.env`。
+
+```bash
+VOLCENGINE_API_KEY=你的_API_Key
+VOLCENGINE_RESOURCE_ID=volc.seedasr.auc
+```
+
+API Key 是长期有效凭证，只应保存在本地 `.env`，不要提交到 Git 或公开文档。
+
+### ASR 接口
+
+剪口播脚本使用火山引擎 v3 AUC 大模型录音文件识别标准版，先提交任务，再轮询结果：
+
+```text
+POST https://openspeech.bytedance.com/api/v3/auc/bigmodel/submit
+POST https://openspeech.bytedance.com/api/v3/auc/bigmodel/query
+X-Api-Resource-Id: volc.seedasr.auc
+```
+
+默认请求会启用字级时间戳和分句信息，以便后续生成审核页和剪辑片段。
+
+### 环境变量
+
+| 变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `VOLCENGINE_API_KEY` | 火山引擎 API Key | 必填 |
+| `VOLCENGINE_RESOURCE_ID` | 火山引擎资源 ID | `volc.seedasr.auc` |
+| `VOLCENGINE_SUBMIT_URL` | 转录任务提交接口 | `https://openspeech.bytedance.com/api/v3/auc/bigmodel/submit` |
+| `VOLCENGINE_QUERY_URL` | 转录任务查询接口 | `https://openspeech.bytedance.com/api/v3/auc/bigmodel/query` |
+| `VOLCENGINE_QUERY_INTERVAL_SECONDS` | 查询间隔 | `5` |
+| `VOLCENGINE_QUERY_MAX_ATTEMPTS` | 最大查询次数 | `240` |
+| `VOLCENGINE_HOTWORDS_FILE` | 热词文件路径 | `字幕/词典.txt` |
+| `VIDEO_UPLOAD_PROVIDER` | 音频上传器 | `uguu` |
+
+## 上传与隐私
+
+默认 `VIDEO_UPLOAD_PROVIDER=uguu`，流水线会把从视频中提取出的 `audio.mp3` 上传到第三方临时文件服务，以便火山引擎通过公网 URL 拉取音频。
+
+处理敏感素材时，建议关闭默认上传器，改用你信任的对象存储或私有上传方式：
+
+```bash
+VIDEO_UPLOAD_PROVIDER=none "./剪口播/scripts/run_pipeline.sh" "/path/to/video.mp4" \
+  --audio-url "https://your-trusted-host/audio.mp3"
+```
+
+当 `VIDEO_UPLOAD_PROVIDER=none` 且没有传入 `--audio-url` 时，流水线会拒绝继续执行，避免误上传。
 
 ## 使用流程
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  /videocut:安装  →  首次使用，安装环境和模型            │
-└─────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────┐
-│  /videocut:剪口播 视频.mp4                              │
-│                                                         │
-│  1. 提取音频 → 上传云端                                 │
-│  2. 火山引擎转录 → 字级别时间戳                         │
-│  3. AI 审核：静音/口误/重复/语气词                      │
-│  4. 生成审核网页 → 浏览器打开                           │
-└─────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────┐
-│  【人工审核 + 执行剪辑】                                │
-│                                                         │
-│  - 单击跳转播放                                         │
-│  - 双击选中/取消                                        │
-│  - Shift 拖动多选                                       │
-│  - 确认后点击「执行剪辑」→ 自动 FFmpeg 剪辑            │
-└─────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────┐
-│  /videocut:字幕                                         │
-│                                                         │
-│  - Whisper 转录                                         │
-│  - 词典纠错（Claude Code → claude code）                │
-│  - 人工确认 → 烧录字幕                                  │
-└─────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────┐
-│  /videocut:高清化  （可选）                             │
-│                                                         │
-│  - 2-pass 编码 + 锐化                                   │
-│  - 自动匹配原片参数，码率 1.2x                          │
-│  - 像剪映一样导出高清                                   │
-└─────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────┐
-│  /videocut:自更新  （可选）                             │
-│                                                         │
-│  告诉 AI 你的偏好，它会记住：                           │
-│  - "静音阈值改成 1 秒"                                  │
-│  - "保留适量嗯作为过渡"                                 │
-└─────────────────────────────────────────────────────────┘
-```
-
-## Skill 清单
-
-| Skill | 功能 | 输入 | 输出 |
-|-------|------|------|------|
-| `安装` | 环境准备 | 无 | 安装日志 |
-| `剪口播` | 转录 + AI 审核 + 剪辑 | 视频文件 | 剪辑后视频 |
-| `高清化` | 2-pass + 锐化导出 | 视频文件 | 高清视频 |
-| `字幕` | 生成字幕 | 视频文件 | 带字幕视频 |
-| `自更新` | 记录偏好 | 用户反馈 | 更新规则文件 |
-
-## 目录结构
-
-```
-videocut/
-├── README.md           # 本文件
-├── .env.example        # API Key 模板
-├── 安装/               # 环境安装 skill
-├── 剪口播/             # 核心：转录 + AI 审核 + 剪辑
-│   ├── SKILL.md        # 流程说明
-│   ├── *.js            # 脚本（生成字幕、审核页面、服务器）
-│   ├── *.sh            # 脚本（转录、剪辑）
-│   └── 用户习惯/       # 审核规则（可自定义）
-│       ├── 1-核心原则.md       # 删前保后
-│       ├── 2-语气词检测.md     # 嗯啊呃
-│       ├── 3-静音段处理.md     # >0.3s 删除
-│       ├── 4-重复句检测.md     # 相邻句开头相同
-│       ├── 5-卡顿词.md         # 那个那个、就是就是
-│       ├── 6-句内重复检测.md   # A+中间+A 模式
-│       ├── 7-连续语气词.md     # 嗯啊、啊呃
-│       └── 8-重说纠正.md       # 部分重复、否定纠正
-├── 字幕/               # 字幕生成与烧录
-│   └── 词典.txt        # 自定义词典
-├── 高清化/             # 2-pass + 锐化导出
-│   └── scripts/
-│       └── hd_export.sh
-└── 自更新/             # 自我进化机制
-```
-
-## 技术架构
-
-```
-┌──────────────────┐     ┌──────────────────┐
-│   火山引擎 ASR   │────▶│  字级别时间戳    │
-│  （云端转录）    │     │  subtitles.json  │
-└──────────────────┘     └────────┬─────────┘
-                                  │
-                                  ▼
-┌──────────────────┐     ┌──────────────────┐
-│   Claude Code    │────▶│   AI 审核结果    │
-│  （语义分析）    │     │  auto_selected   │
-└──────────────────┘     └────────┬─────────┘
-                                  │
-                                  ▼
-┌──────────────────┐     ┌──────────────────┐
-│   审核网页       │────▶│   最终删除列表   │
-│  （人工确认）    │     │  delete_segments │
-└──────────────────┘     └────────┬─────────┘
-                                  │
-                                  ▼
-┌──────────────────┐     ┌──────────────────┐
-│     FFmpeg       │────▶│   剪辑后视频     │
-│  filter_complex  │     │   xxx_cut.mp4    │
-└──────────────────┘     └──────────────────┘
-```
-
-## 依赖
-
-| 依赖 | 用途 | 安装方式 |
-|------|------|----------|
-| Node.js 18+ | 运行脚本 | `brew install node` |
-| FFmpeg | 音视频处理 | `brew install ffmpeg` |
-| Python 3.8+ | 模型运行 | 系统自带 |
-| 火山引擎 API | 语音转录（大模型录音文件极速版） | [申请 Key](https://console.volcengine.com/) |
-
-## 常见问题
-
-### Q: 火山引擎使用哪个接口？
-
-剪口播脚本使用 v3 大模型录音文件极速版：
+### 剪口播
 
 ```text
-POST https://openspeech.bytedance.com/api/v3/auc/bigmodel/recognize/flash
-X-Api-Resource-Id: volc.bigasr.auc_turbo
+$videocut:剪口播 /path/to/video.mp4
 ```
 
-`.env` 需要配置：
+Agent 会优先运行：
 
 ```bash
-VOLCENGINE_API_KEY=your_api_key_here
-VOLCENGINE_RESOURCE_ID=volc.bigasr.auc_turbo
+"./剪口播/scripts/run_pipeline.sh" "/path/to/video.mp4"
 ```
 
-### Q: 火山引擎转录超时？
+生成目录结构：
 
-上传音频到 uguu.se（脚本默认），不要用 catbox.moe（火山引擎访问慢）。
-
-### Q: 审核网页打不开？
-
-检查端口 8899 是否被占用：`lsof -i :8899`
-
-### Q: 剪辑后音画不同步？
-
-使用 `filter_complex + trim` 而非 `concat demuxer`，脚本已处理。
-
-### Q: 如何添加自定义词典？
-
-编辑 `字幕/词典.txt`，每行一个词：
-```
-Claude Code
-MCP
-API
+```text
+output/YYYY-MM-DD_视频名/剪口播/
+├── 1_转录/
+│   ├── audio.mp3
+│   ├── audio_url.txt
+│   ├── volcengine_request.json
+│   ├── volcengine_result.json
+│   └── subtitles_words.json
+├── 2_分析/
+│   ├── readable_transcript.txt
+│   ├── sentences.json
+│   └── auto_selected.json
+└── 3_审核/
+    ├── review.html
+    └── delete_segments.json
 ```
 
-## License
+审核页支持点击定位、双击选中、按住 Shift 批量选择和确认后执行剪辑。
 
-MIT
+### 字幕
+
+```text
+$videocut:字幕 /path/to/video.mp4
+```
+
+字幕模块会使用 `字幕/词典.txt` 做术语纠错。剪口播转录脚本也会读取同一份词典作为火山热词。
+
+### 高清化
+
+```text
+$videocut:高清化 /path/to/video.mp4
+```
+
+高清化模块使用 2-pass 编码和锐化策略，尽量匹配或略高于原片参数输出。
+
+### 自进化
+
+```text
+$videocut:自进化 记录这条剪辑偏好：静音超过 0.8 秒再默认删除
+```
+
+自进化模块用于把你的偏好沉淀回规则文件，让后续剪辑更符合个人习惯。
+
+## 项目结构
+
+```text
+videocut-skills/
+├── README.md
+├── LICENSE
+├── CHANGES_FROM_UPSTREAM.md
+├── .env.example
+├── docs/
+│   └── images/
+│       └── volcengine-speech-api/
+├── 安装/
+│   ├── SKILL.md
+│   └── agents/openai.yaml
+├── 剪口播/
+│   ├── SKILL.md
+│   ├── agents/openai.yaml
+│   ├── fixtures/
+│   ├── references/
+│   │   ├── pipeline_steps.md
+│   │   ├── silence_rules.md
+│   │   ├── misread_rules.md
+│   │   ├── review_server.md
+│   │   ├── cut_encoding.md
+│   │   ├── data_formats.md
+│   │   └── schemas.md
+│   ├── scripts/
+│   │   ├── run_pipeline.sh
+│   │   ├── upload_audio.sh
+│   │   ├── volcengine_transcribe.sh
+│   │   ├── generate_subtitles.js
+│   │   ├── generate_auto_selected.js
+│   │   ├── generate_semantic_selected.js
+│   │   ├── generate_review.js
+│   │   ├── review_server.js
+│   │   ├── validate_outputs.js
+│   │   └── cut_video.sh
+│   └── 用户习惯/
+├── 字幕/
+│   ├── SKILL.md
+│   ├── agents/openai.yaml
+│   ├── scripts/subtitle_server.js
+│   └── 词典.txt
+├── 高清化/
+│   ├── SKILL.md
+│   ├── agents/openai.yaml
+│   └── scripts/hd_export.sh
+└── 自进化/
+    ├── SKILL.md
+    └── agents/openai.yaml
+```
+
+## 设计原则
+
+- 脚本优先：确定性步骤尽量放进脚本，Agent 负责调度、解释和处理异常。
+- 按需读取：`SKILL.md` 只保留主流程，口误规则、静音规则、数据格式和编码细节放入 `references/`。
+- 可验证输出：核心 JSON 产物由 `validate_outputs.js` 校验，减少网页审核和剪辑阶段的隐性错误。
+- 隐私显式：默认上传行为写清楚，敏感素材必须能切换到可信音频 URL。
+- 保留人工确认：AI 负责预选，最终删除片段仍由审核页确认。
+
+## 许可
+
+本项目遵循 [MIT License](LICENSE)。
+
+本仓库是 [Ceeon/videocut-skills](https://github.com/Ceeon/videocut-skills) 的 fork/改造版。上游来源、MIT 许可继承和本 fork 修改记录见 [CHANGES_FROM_UPSTREAM.md](CHANGES_FROM_UPSTREAM.md)。

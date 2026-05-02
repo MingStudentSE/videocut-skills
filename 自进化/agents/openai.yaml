@@ -1,0 +1,7 @@
+interface:
+  display_name: "自进化"
+  short_description: "把剪辑反馈沉淀为可复用规则"
+  default_prompt: "Use $videocut:自进化 to turn the latest editing feedback into reusable videocut rules."
+
+policy:
+  allow_implicit_invocation: true

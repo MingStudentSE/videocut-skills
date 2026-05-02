@@ -36,17 +36,19 @@ pos: 前置 skill，首次使用前运行
 
 ### 火山引擎语音识别
 
-控制台：https://console.volcengine.com/speech/new/experience/asr?projectName=default
+控制台：https://console.volcengine.com/speech/new/overview
 
-1. 注册火山引擎账号
-2. 开通语音识别服务
-3. 获取 API Key
+1. 打开控制台后，在「快速开始」区域点击「查看详情」。
+2. 在「快捷 API 接入」弹窗的 `STEP2 快速接入测试` 中，选择并开通「豆包录音文件识别模型 2.0」。
+3. 在 `STEP1 获取 API Key` 中创建 API Key，或对已有 API Key 点击「选择使用」。
+4. 将选中的 API Key 配置到本 skill 仓库根目录的 `.env`。
 
-配置到项目目录 `.codex/skills/.env`：
+配置文件位置：`videocut-skills/.env`（与 `.env.example` 同级）。
 
 ```bash
-# 文件路径：剪辑Agent/.codex/skills/.env
 VOLCENGINE_API_KEY=your_api_key_here
+VOLCENGINE_RESOURCE_ID=volc.seedasr.auc
+VOLCENGINE_HOTWORDS_FILE=字幕/词典.txt
 ```
 
 ## 安装流程
@@ -75,8 +77,9 @@ ffmpeg -version
 ### 2. 配置 API Key
 
 ```bash
-# 在项目 .codex/skills/ 目录下创建 .env 文件
-echo "VOLCENGINE_API_KEY=your_key" >> .codex/skills/.env
+# 在 videocut-skills 根目录下创建 .env 文件
+cp .env.example .env
+# 编辑 .env，填入 VOLCENGINE_API_KEY
 ```
 
 ### 3. 验证环境
@@ -88,15 +91,16 @@ node -v
 # 检查 FFmpeg
 ffmpeg -version
 
-# 检查 API Key（在项目目录下执行）
-cat .codex/skills/.env | grep VOLCENGINE
+# 检查 API Key 是否存在，不要把 key 打印到聊天或公开日志里
+test -n "$(grep '^VOLCENGINE_API_KEY=' .env | cut -d= -f2-)" && echo "VOLCENGINE_API_KEY 已配置"
+grep -E '^VOLCENGINE_(RESOURCE_ID|HOTWORDS_FILE)=' .env
 ```
 
 ## 常见问题
 
 ### Q1: API Key 在哪获取？
 
-火山引擎控制台 → 语音技术 → 语音识别 → API Key
+火山引擎豆包语音服务控制台 → 快速开始 → 查看详情 → `STEP1 获取 API Key`。模型能力在 `STEP2` 中选择并开通「豆包录音文件识别模型 2.0」。
 
 ### Q2: ffmpeg 命令找不到
 

@@ -1,0 +1,29 @@
+{
+  "utterances": [
+    {
+      "start_time": 500,
+      "end_time": 1600,
+      "text": "你好世界",
+      "words": [
+        {"text": "你", "start_time": 500, "end_time": 700},
+        {"text": "好", "start_time": 700, "end_time": 900},
+        {"text": "世", "start_time": 1200, "end_time": 1400},
+        {"text": "界", "start_time": 1400, "end_time": 1600}
+      ]
+    },
+    {
+      "start_time": 3000,
+      "end_time": 3400,
+      "text": "再见",
+      "words": [
+        {"text": "再", "start_time": 3000, "end_time": 3200},
+        {"text": "见", "start_time": 3200, "end_time": 3400}
+      ]
+    }
+  ],
+  "text": "你好世界再见",
+  "audio_info": {
+    "duration": 3600
+  },
+  "request_id": "fixture-request-id"
+}

@@ -1,0 +1,7 @@
+interface:
+  display_name: "剪口播"
+  short_description: "转录口播视频并生成可审核剪辑方案"
+  default_prompt: "Use $videocut:剪口播 to transcribe this spoken video, detect pauses and misreads, and generate a review page."
+
+policy:
+  allow_implicit_invocation: true

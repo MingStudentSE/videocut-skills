@@ -680,5 +680,5 @@ const html = `<!DOCTYPE html>
 
 fs.writeFileSync('review.html', html);
 console.log('✅ 已生成 review.html');
-console.log('📌 启动服务器: python3 -m http.server 8899');
+console.log(`📌 启动服务器: node "${path.join(__dirname, 'review_server.js')}" 8899 "${videoFile}"`);
 console.log('📌 打开: http://localhost:8899/review.html');

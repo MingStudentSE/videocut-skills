@@ -1,0 +1,7 @@
+interface:
+  display_name: "安装"
+  short_description: "准备 videocut 依赖和火山 API 配置"
+  default_prompt: "Use $videocut:安装 to check dependencies and configure the Volcengine speech API for videocut."
+
+policy:
+  allow_implicit_invocation: true

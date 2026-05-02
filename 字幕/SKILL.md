@@ -75,10 +75,10 @@ curl -s -F "files[]=@audio.mp3" https://uguu.se/upload
 
 ## Step 2: 火山引擎转录（带热词）
 
-转录脚本会**自动读取词典**作为热词，提高识别准确率：
+转录脚本会**自动读取词典**作为热词，提高识别准确率。默认读取 `字幕/词典.txt`，通过火山 `request.corpus.context` 直传；如需换词典，在 `.env` 设置 `VOLCENGINE_HOTWORDS_FILE`。
 
 ```bash
-# 词典位置: /Users/chengfeng/Desktop/AIos/剪辑Agent/.codex/skills/字幕/词典.txt
+# 词典位置: ../字幕/词典.txt（可用 VOLCENGINE_HOTWORDS_FILE 覆盖）
 # 脚本会自动加载
 
 bash ../剪口播/scripts/volcengine_transcribe.sh "https://o.uguu.se/xxxxx.mp3"
