@@ -39,6 +39,7 @@
 
 | 模块 | 能力 | 主要产物 |
 | --- | --- | --- |
+| 路由 | 判断用户当前目标，引导进入安装、剪口播、字幕、高清化或自进化 | 推荐工作流和下一步动作 |
 | 剪口播 | 提取音频、上传、火山转录、静音/口误/重复预选、网页审核、执行剪辑 | `volcengine_result.json`、`subtitles_words.json`、`auto_selected.json`、`delete_segments.json`、剪辑后视频 |
 | 字幕 | 生成字幕、词典纠错、审核与烧录 | 字幕文件、带字幕视频 |
 | 高清化 | 2-pass 编码、锐化、匹配原片参数导出 | 高清 MP4 |
@@ -86,7 +87,13 @@ VIDEO_UPLOAD_PROVIDER=uguu
 
 ### 3. 检查依赖
 
-在 Codex 或 Claude Code 中调用安装 Skill：
+如果不确定下一步该做什么，先调用顶层路由 Skill：
+
+```text
+$videocut
+```
+
+如果已经明确是首次安装或环境检查，可以直接调用安装 Skill：
 
 ```text
 $videocut:安装
@@ -192,6 +199,14 @@ VIDEO_UPLOAD_PROVIDER=none "./剪口播/scripts/run_pipeline.sh" "/path/to/video
 
 ## 使用流程
 
+### 路由引导
+
+```text
+$videocut 我想把这个口播视频处理成可发布版本
+```
+
+路由 Skill 会先判断你当前要做的是安装、剪口播、字幕、高清化还是规则更新，再进入对应子 Skill。新用户或目标不明确时，建议从这里开始。
+
 ### 剪口播
 
 ```text
@@ -257,6 +272,8 @@ videocut-skills/
 ├── LICENSE
 ├── CHANGES_FROM_UPSTREAM.md
 ├── .env.example
+├── SKILL.md
+├── agents/openai.yaml
 ├── docs/
 │   └── images/
 │       └── volcengine-speech-api/

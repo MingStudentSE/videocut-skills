@@ -54,6 +54,9 @@
 
 本部分主要对应白皮书里「降低 Agent 上下文负担」「确定性步骤脚本化」「规则按需加载」和「用可验证产物替代口头约定」的建议。
 
+- 新增顶层路由 skill：`SKILL.md`，名称为 `videocut`。用户不知道该用哪个子 skill 时，可以先用 `$videocut` 获得流程引导。
+- 新增顶层 `agents/openai.yaml`，让路由 skill 在列表展示和默认提示里更稳定。
+- 按 `skill-builder` 质量门优化顶层路由：补充触发正例、不应触发场景、决策步骤、缺信息提问规则和上传/剪辑安全边界。
 - 将 `剪口播/SKILL.md` 压缩成 Agent 导航页，减少常驻上下文。
 - 将详细规则迁移到按需读取的 references：
   - `剪口播/references/pipeline_steps.md`

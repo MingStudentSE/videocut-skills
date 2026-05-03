@@ -1,0 +1,7 @@
+interface:
+  display_name: "Videocut 路由"
+  short_description: "为 videocut 选择安装、剪辑、字幕或导出流程"
+  default_prompt: "Use $videocut to choose the right next step for my spoken-video editing workflow."
+
+policy:
+  allow_implicit_invocation: true
