@@ -3,7 +3,7 @@
  * Validate core videocut pipeline artifacts.
  *
  * Usage:
- *   node validate_outputs.js --base output/YYYY-MM-DD_视频名/剪口播
+ *   node validate_outputs.js --base output/YYYY-MM-DD_视频名/语音剪辑
  *   node validate_outputs.js --transcript 1_转录/volcengine_result.json --words 1_转录/subtitles_words.json
  */
 
@@ -90,7 +90,7 @@ function validateTranscript(file) {
       errors.push(`volcengine_result.json: utterances[${ui}].text 必须是字符串`);
     }
     if (!Array.isArray(u.words)) {
-      errors.push(`volcengine_result.json: utterances[${ui}].words 必须存在，剪口播需要 show_utterances=true`);
+      errors.push(`volcengine_result.json: utterances[${ui}].words 必须存在，语音剪辑需要 show_utterances=true`);
       return;
     }
     u.words.forEach((w, wi) => {

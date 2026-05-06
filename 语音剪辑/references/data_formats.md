@@ -3,12 +3,12 @@
 结构校验规则见 [schemas.md](schemas.md)。机器校验使用：
 
 ```bash
-node scripts/validate_outputs.js --base output/YYYY-MM-DD_视频名/剪口播
+node scripts/validate_outputs.js --base output/YYYY-MM-DD_视频名/语音剪辑
 ```
 
 ## volcengine_result.json
 
-剪口播后续依赖：
+语音剪辑后续依赖：
 
 ```json
 {

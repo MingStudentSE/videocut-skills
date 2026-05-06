@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 剪口播确定性流水线：从视频到审核页。
+# 语音剪辑确定性流水线：从视频到审核页。
 #
 # 用法:
 #   run_pipeline.sh <video.mp4> [--audio-url URL] [--output-root output] [--date YYYY-MM-DD]
@@ -83,7 +83,7 @@ fi
 VIDEO_ABS="$(cd "$(dirname "$VIDEO_PATH")" && pwd)/$(basename "$VIDEO_PATH")"
 VIDEO_NAME="$(basename "$VIDEO_PATH")"
 VIDEO_NAME="${VIDEO_NAME%.*}"
-BASE_DIR="$OUTPUT_ROOT/${DATE}_${VIDEO_NAME}/剪口播"
+BASE_DIR="$OUTPUT_ROOT/${DATE}_${VIDEO_NAME}/语音剪辑"
 TRANS_DIR="$BASE_DIR/1_转录"
 ANALYSIS_DIR="$BASE_DIR/2_分析"
 REVIEW_DIR="$BASE_DIR/3_审核"
@@ -139,7 +139,7 @@ node "$SCRIPT_DIR/validate_outputs.js" --base "$BASE_DIR" --require-review
 
 cat <<EOF
 
-✅ 剪口播流水线完成
+✅ 语音剪辑流水线完成
 输出目录: $BASE_DIR
 审核页: $REVIEW_DIR/review.html
 

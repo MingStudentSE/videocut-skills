@@ -1,11 +1,11 @@
-# 剪口播手工流程
+# 语音剪辑手工流程
 
 本文件保存完整确定性步骤。等 `run_pipeline` 入口脚本完成后，SKILL.md 应优先调用脚本，本文件作为 fallback 和排障参考。
 
 优先入口：
 
 ```bash
-SKILL_DIR="${SKILL_DIR:?请先将 SKILL_DIR 设置为当前「剪口播」skill 目录}"
+SKILL_DIR="${SKILL_DIR:?请先将 SKILL_DIR 设置为当前「语音剪辑」skill 目录}"
 "$SKILL_DIR/scripts/run_pipeline.sh" "$VIDEO_PATH"
 ```
 
@@ -17,7 +17,7 @@ SKILL_DIR="${SKILL_DIR:?请先将 SKILL_DIR 设置为当前「剪口播」skill 
 VIDEO_PATH="/path/to/视频.mp4"
 VIDEO_NAME=$(basename "$VIDEO_PATH" .mp4)
 DATE=$(date +%Y-%m-%d)
-BASE_DIR="output/${DATE}_${VIDEO_NAME}/剪口播"
+BASE_DIR="output/${DATE}_${VIDEO_NAME}/语音剪辑"
 
 mkdir -p "$BASE_DIR/1_转录" "$BASE_DIR/2_分析" "$BASE_DIR/3_审核"
 cd "$BASE_DIR"
@@ -40,7 +40,7 @@ ffmpeg -i "file:$VIDEO_PATH" -vn -acodec libmp3lame -y audio.mp3
 ## 2. 火山引擎转录
 
 ```bash
-SKILL_DIR="${SKILL_DIR:?请先将 SKILL_DIR 设置为当前「剪口播」skill 目录}"
+SKILL_DIR="${SKILL_DIR:?请先将 SKILL_DIR 设置为当前「语音剪辑」skill 目录}"
 "$SKILL_DIR/scripts/volcengine_transcribe.sh" "<公网音频URL>"
 ```
 

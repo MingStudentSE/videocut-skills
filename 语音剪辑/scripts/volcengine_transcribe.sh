@@ -256,7 +256,7 @@ const raw = JSON.parse(fs.readFileSync('volcengine_raw_result.json', 'utf8'));
 if (!raw.result || !Array.isArray(raw.result.utterances)) {
   console.error('❌ 转录失败，响应:');
   console.error(JSON.stringify(raw));
-  console.error('提示：剪口播流程需要 request.show_utterances=true 才能生成字级字幕。');
+  console.error('提示：语音剪辑流程需要 request.show_utterances=true 才能生成字级字幕。');
   process.exit(1);
 }
 const out = {

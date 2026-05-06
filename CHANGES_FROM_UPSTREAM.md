@@ -32,7 +32,7 @@
   - `POST https://openspeech.bytedance.com/api/v3/auc/bigmodel/query`
 - 默认资源 ID 改为 `volc.seedasr.auc`。
 - 文档中明确并验证当前使用的模型能力是「豆包录音文件识别模型 2.0」。
-- 保留 `show_utterances=true`，因为剪口播流程依赖字级时间戳。
+- 保留 `show_utterances=true`，因为语音剪辑流程依赖字级时间戳。
 - 新增 `volcengine_request.json` 输出，便于检查请求体和排查转录问题。
 
 ## 热词和词典
@@ -57,23 +57,23 @@
 - 新增顶层路由 skill：`SKILL.md`，名称为 `videocut`。用户不知道该用哪个子 skill 时，可以先用 `$videocut` 获得流程引导。
 - 新增顶层 `agents/openai.yaml`，让路由 skill 在列表展示和默认提示里更稳定。
 - 按 `skill-builder` 质量门优化顶层路由：补充触发正例、不应触发场景、决策步骤、缺信息提问规则和上传/剪辑安全边界。
-- 将 `剪口播/SKILL.md` 压缩成 Agent 导航页，减少常驻上下文。
+- 将 `语音剪辑/SKILL.md` 压缩成 Agent 导航页，减少常驻上下文。
 - 将详细规则迁移到按需读取的 references：
-  - `剪口播/references/pipeline_steps.md`
-  - `剪口播/references/silence_rules.md`
-  - `剪口播/references/misread_rules.md`
-  - `剪口播/references/review_server.md`
-  - `剪口播/references/cut_encoding.md`
-  - `剪口播/references/data_formats.md`
-  - `剪口播/references/schemas.md`
-- 新增 `剪口播/scripts/run_pipeline.sh`，作为从视频到审核页的推荐确定性入口。
-- 新增 `剪口播/scripts/prepare_analysis_inputs.js`，用于生成 `readable.txt` 和 `sentences.txt`。
-- 新增 `剪口播/scripts/validate_outputs.js`，用于校验核心 JSON 产物。
-- 新增 `剪口播/fixtures/sample_volcengine_result.json`，用于本地验证和回归测试。
+  - `语音剪辑/references/pipeline_steps.md`
+  - `语音剪辑/references/silence_rules.md`
+  - `语音剪辑/references/misread_rules.md`
+  - `语音剪辑/references/review_server.md`
+  - `语音剪辑/references/cut_encoding.md`
+  - `语音剪辑/references/data_formats.md`
+  - `语音剪辑/references/schemas.md`
+- 新增 `语音剪辑/scripts/run_pipeline.sh`，作为从视频到审核页的推荐确定性入口。
+- 新增 `语音剪辑/scripts/prepare_analysis_inputs.js`，用于生成 `readable.txt` 和 `sentences.txt`。
+- 新增 `语音剪辑/scripts/validate_outputs.js`，用于校验核心 JSON 产物。
+- 新增 `语音剪辑/fixtures/sample_volcengine_result.json`，用于本地验证和回归测试。
 
 ## 上传隐私边界
 
-- 新增 `剪口播/scripts/upload_audio.sh`。
+- 新增 `语音剪辑/scripts/upload_audio.sh`。
 - 新增 `VIDEO_UPLOAD_PROVIDER=uguu`，作为默认上传器。
 - 新增 `VIDEO_UPLOAD_PROVIDER=none`，用于禁止把敏感音频上传到第三方服务，并要求用户提供可信的 `--audio-url`。
 - 在文档中明确说明：默认上传流程会把提取出来的音频上传到第三方临时文件托管服务，以便火山引擎拉取音频。
@@ -81,7 +81,7 @@
 ## 文档完善
 
 - README 新增火山引擎「豆包录音文件识别模型 2.0」开通步骤和截图。
-- README 补回上游原版的核心定位、剪映痛点和“与剪映智能剪口播对比”说明，同时标明原版 README 链接。
+- README 补回上游原版的核心定位、剪映痛点和“与剪映智能口播剪辑对比”说明，同时标明原版 README 链接。
 - `.env.example` 更新为当前 ASR、热词和上传器配置。
 - `安装/SKILL.md` 同步当前火山控制台流程和 `.env` 位置。
 - 移除 skill 文档中陈旧的本地硬编码路径，例如 `/Users/chengfeng/...`。

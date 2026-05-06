@@ -1,6 +1,6 @@
 ---
-name: videocut:剪口播
-description: 口播视频转录、口误识别、静音预选和网页审核。Use when user asks to 剪口播、处理口播视频、识别口误、去掉卡顿/重复/静音，or generate review.html/delete_segments for spoken videos.
+name: videocut:语音剪辑
+description: 口播视频转录、口误识别、静音预选和网页审核。Use when user asks to 语音剪辑、处理口播视频、识别口误、去掉卡顿/重复/静音，or generate review.html/delete_segments for spoken videos.
 ---
 
 <!--
@@ -13,7 +13,7 @@ pos: 转录+识别，到用户网页审核为止
 2. /CLAUDE.md 路由表
 -->
 
-# 剪口播 v2
+# 语音剪辑 v2
 
 > 火山引擎转录 + 自动静音/语义筛查 + AI 复核 + 网页审核
 
@@ -27,7 +27,7 @@ pos: 转录+识别，到用户网页审核为止
 ## 输出结构
 
 ```
-output/YYYY-MM-DD_视频名/剪口播/
+output/YYYY-MM-DD_视频名/语音剪辑/
 ├── 1_转录/
 │   ├── audio.mp3
 │   ├── volcengine_request.json
@@ -50,7 +50,7 @@ output/YYYY-MM-DD_视频名/剪口播/
 ## 主流程
 
 1. 解析用户给的视频路径，设置 `VIDEO_PATH`。
-2. 设置 `SKILL_DIR` 为当前 `剪口播` skill 目录，不要硬编码用户目录。
+2. 设置 `SKILL_DIR` 为当前 `语音剪辑` skill 目录，不要硬编码用户目录。
 3. 优先运行一键流水线：
 
 ```bash

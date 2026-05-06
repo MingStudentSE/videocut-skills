@@ -6,7 +6,7 @@ description: 视频高清导出。2-pass编码+锐化，匹配或超越原片画
 <!--
 input: 视频文件（剪辑后的 _cut.mp4 或任意视频）
 output: 高清化后的视频 _hd.mp4
-pos: 后置 skill，剪口播/字幕完成后调用
+pos: 后置 skill，语音剪辑/字幕完成后调用
 
 架构守护者：一旦我被修改，请同步更新：
 1. ../README.md 的 Skill 清单
@@ -30,7 +30,7 @@ pos: 后置 skill，剪口播/字幕完成后调用
 剪映的做法：**剪辑时不管画质，导出时统一渲染成高清**。
 
 对我们的管线来说：
-- 剪口播 `cut_video.sh` 已经做了帧级精确切割 + 匹配码率重编码
+- 语音剪辑 `cut_video.sh` 已经做了帧级精确切割 + 匹配码率重编码
 - 高清化是**可选的额外增强**，用 2-pass + 更高码率 + 锐化，让画质超过原片
 
 ## 流程
@@ -53,13 +53,13 @@ pos: 后置 skill，剪口播/字幕完成后调用
 
 **优先级**（从高到低）：
 1. 用户传入的视频路径
-2. 当前 output 目录下的 `剪口播/3_审核/*_cut.mp4`
+2. 当前 output 目录下的 `语音剪辑/3_审核/*_cut.mp4`
 3. 字幕烧录后的 `字幕/3_输出/*_字幕.mp4`
 
 ```bash
 # 自动查找
 OUTPUT_DIR="output/YYYY-MM-DD_视频名"
-VIDEO=$(find "$OUTPUT_DIR/剪口播/3_审核" -name "*_cut.mp4" -type f 2>/dev/null | head -1)
+VIDEO=$(find "$OUTPUT_DIR/语音剪辑/3_审核" -name "*_cut.mp4" -type f 2>/dev/null | head -1)
 ```
 
 ### 步骤 1-4: 执行高清化
@@ -112,4 +112,4 @@ bash "$SKILL_DIR/scripts/hd_export.sh" input.mp4 output_hd.mp4 1.5
 
 ## 来源
 
-详见 `剪口播/log/编码方案演进-匹配码率.md`
+详见 `语音剪辑/log/编码方案演进-匹配码率.md`

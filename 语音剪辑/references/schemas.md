@@ -3,7 +3,7 @@
 机器校验入口：
 
 ```bash
-node scripts/validate_outputs.js --base output/YYYY-MM-DD_视频名/剪口播
+node scripts/validate_outputs.js --base output/YYYY-MM-DD_视频名/语音剪辑
 ```
 
 本文件是给 Agent 阅读的契约说明；真实校验逻辑以 `scripts/validate_outputs.js` 为准。
@@ -15,7 +15,7 @@ node scripts/validate_outputs.js --base output/YYYY-MM-DD_视频名/剪口播
 - `utterances[].start_time`: number，毫秒
 - `utterances[].end_time`: number，毫秒，必须大于等于 `start_time`
 - `utterances[].text`: string
-- `utterances[].words`: array，必须存在，因为剪口播依赖字级时间戳
+- `utterances[].words`: array，必须存在，因为语音剪辑依赖字级时间戳
 - `utterances[].words[].text`: string
 - `utterances[].words[].start_time`: number，毫秒
 - `utterances[].words[].end_time`: number，毫秒

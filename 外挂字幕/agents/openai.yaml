@@ -1,0 +1,7 @@
+interface:
+  display_name: "外挂字幕"
+  short_description: "根据个人热词和语义复核生成 SRT/VTT 外挂字幕"
+  default_prompt: "Use $videocut:外挂字幕 to transcribe this video, review terminology and semantics, and export sidecar SRT/VTT subtitles."
+
+policy:
+  allow_implicit_invocation: true

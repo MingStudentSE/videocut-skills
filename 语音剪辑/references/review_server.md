@@ -4,7 +4,7 @@
 
 ```bash
 cd 3_审核
-SKILL_DIR="${SKILL_DIR:?请先将 SKILL_DIR 设置为当前「剪口播」skill 目录}"
+SKILL_DIR="${SKILL_DIR:?请先将 SKILL_DIR 设置为当前「语音剪辑」skill 目录}"
 node "$SKILL_DIR/scripts/generate_review.js" ../1_转录/subtitles_words.json ../2_分析/auto_selected.json "$VIDEO_PATH"
 ```
 

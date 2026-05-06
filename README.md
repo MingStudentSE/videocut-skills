@@ -25,7 +25,7 @@
 
 上游原版 README 的核心定位是：用 Claude Code Skills 做一个专门服务口播视频的剪辑 Agent。本 fork 继续保留这个定位，只是把底层转录模型、主流程脚本、文档结构和隐私边界做了二次开发。
 
-这个项目主要解决剪映「智能剪口播」在知识类、教程类、长口播场景里的两个问题：
+这个项目主要解决剪映「智能口播剪辑」在知识类、教程类、长口播场景里的两个问题：
 
 1. 只看停顿或表层模式时，很难判断“前一句说错、后一句纠正”这种语义关系。
 2. 通用字幕识别容易把产品名、技术词、人名、缩写和个人高频词识别错。
@@ -40,7 +40,7 @@
 
 - 将 ASR 接口切换为火山引擎「豆包录音文件识别模型 2.0」标准版提交/查询接口。
 - 实现 `字幕/词典.txt` 热词读取，并随转录请求传给火山引擎。
-- 收敛剪口播主流程，新增 `剪口播/scripts/run_pipeline.sh`。
+- 收敛语音剪辑主流程，新增 `语音剪辑/scripts/run_pipeline.sh`。
 - 新增输出校验、schema 说明和样例转录 fixture。
 - 抽象音频上传器，并补充第三方上传隐私说明。
 - 修复网页审核页在 macOS 上按住 Shift 批量选中的交互问题。
@@ -52,18 +52,19 @@
 
 | 模块 | 能力 | 主要产物 |
 | --- | --- | --- |
-| 路由 | 判断用户当前目标，引导进入安装、剪口播、字幕、高清化或自进化 | 推荐工作流和下一步动作 |
-| 剪口播 | 提取音频、上传、火山转录、静音/口误/重复预选、网页审核、执行剪辑 | `volcengine_result.json`、`subtitles_words.json`、`auto_selected.json`、`delete_segments.json`、剪辑后视频 |
-| 字幕 | 生成字幕、词典纠错、审核与烧录 | 字幕文件、带字幕视频 |
+| 路由 | 判断用户当前目标，引导进入安装、语音剪辑、外挂字幕、烧录字幕、高清化或自进化 | 推荐工作流和下一步动作 |
+| 语音剪辑 | 提取音频、上传、火山转录、静音/口误/重复预选、网页审核、执行剪辑 | `volcengine_result.json`、`subtitles_words.json`、`auto_selected.json`、`delete_segments.json`、剪辑后视频 |
+| 外挂字幕 | 生成字幕、个人热词校对、大模型语义复核、导出 SRT/VTT | 外挂字幕文件、语义复核记录 |
+| 烧录字幕 | 生成字幕、词典纠错、审核与烧录 | 字幕文件、带字幕视频 |
 | 高清化 | 2-pass 编码、锐化、匹配原片参数导出 | 高清 MP4 |
 | 安装 | 检查 Node.js、FFmpeg、Python 和本地依赖 | 环境检查结果 |
 | 自进化 | 记录用户剪辑偏好，更新规则文件 | 用户习惯规则 |
 
-## 与剪映智能剪口播对比
+## 与剪映智能口播剪辑对比
 
 这里对比的是“知识类口播剪辑”这个具体工作流，不是对剪映完整剪辑产品能力的评测。剪映适合快速手工剪辑和成片包装；本项目更适合把长口播里的重复、纠正、卡顿和专业词处理成可追溯的 Agent 流水线。
 
-| 能力 | Videocut Skills | 剪映智能剪口播常见体验 |
+| 能力 | Videocut Skills | 剪映智能口播剪辑常见体验 |
 | --- | --- | --- |
 | 语义理解 | 结合转录文本和规则，识别重说、纠正、残句和上下文重复 | 更偏自动化剪停顿、语气词和表层模式 |
 | 静音处理 | 阈值、规则和审核结果可配置，可输出 JSON 产物 | 操作方便，但规则细节和中间产物不透明 |
@@ -86,7 +87,7 @@ flowchart TD
   F --> G["本地网页审核"]
   G --> H["人工确认<br/>删除片段"]
   H --> I["FFmpeg 精确剪辑"]
-  I --> J["字幕 / 高清化<br/>后处理"]
+  I --> J["外挂字幕 / 烧录字幕 / 高清化<br/>后处理"]
 ```
 
 ## 快速开始
@@ -135,24 +136,24 @@ ffmpeg -version
 python3 --version
 ```
 
-### 4. 运行剪口播流水线
+### 4. 运行语音剪辑流水线
 
 在 Agent 中直接说：
 
 ```text
-$videocut:剪口播 /path/to/video.mp4
+$videocut:语音剪辑 /path/to/video.mp4
 ```
 
 或在命令行运行确定性入口脚本：
 
 ```bash
-"./剪口播/scripts/run_pipeline.sh" "/path/to/video.mp4"
+"./语音剪辑/scripts/run_pipeline.sh" "/path/to/video.mp4"
 ```
 
 完成后会生成本地审核页：
 
 ```bash
-node "./剪口播/scripts/review_server.js" 8899 "/path/to/video.mp4"
+node "./语音剪辑/scripts/review_server.js" 8899 "/path/to/video.mp4"
 ```
 
 然后打开：
@@ -189,7 +190,7 @@ API Key 是长期有效凭证，只应保存在本地 `.env`，不要提交到 G
 
 ### ASR 接口
 
-剪口播脚本使用火山引擎 v3 AUC 大模型录音文件识别标准版，先提交任务，再轮询结果：
+语音剪辑脚本使用火山引擎 v3 AUC 大模型录音文件识别标准版，先提交任务，再轮询结果：
 
 ```text
 POST https://openspeech.bytedance.com/api/v3/auc/bigmodel/submit
@@ -219,7 +220,7 @@ X-Api-Resource-Id: volc.seedasr.auc
 处理敏感素材时，建议关闭默认上传器，改用你信任的对象存储或私有上传方式：
 
 ```bash
-VIDEO_UPLOAD_PROVIDER=none "./剪口播/scripts/run_pipeline.sh" "/path/to/video.mp4" \
+VIDEO_UPLOAD_PROVIDER=none "./语音剪辑/scripts/run_pipeline.sh" "/path/to/video.mp4" \
   --audio-url "https://your-trusted-host/audio.mp3"
 ```
 
@@ -233,24 +234,24 @@ VIDEO_UPLOAD_PROVIDER=none "./剪口播/scripts/run_pipeline.sh" "/path/to/video
 $videocut 我想把这个口播视频处理成可发布版本
 ```
 
-路由 Skill 会先判断你当前要做的是安装、剪口播、字幕、高清化还是规则更新，再进入对应子 Skill。新用户或目标不明确时，建议从这里开始。
+路由 Skill 会先判断你当前要做的是安装、语音剪辑、外挂字幕、烧录字幕、高清化还是规则更新，再进入对应子 Skill。新用户或目标不明确时，建议从这里开始。
 
-### 剪口播
+### 语音剪辑
 
 ```text
-$videocut:剪口播 /path/to/video.mp4
+$videocut:语音剪辑 /path/to/video.mp4
 ```
 
 Agent 会优先运行：
 
 ```bash
-"./剪口播/scripts/run_pipeline.sh" "/path/to/video.mp4"
+"./语音剪辑/scripts/run_pipeline.sh" "/path/to/video.mp4"
 ```
 
 生成目录结构：
 
 ```text
-output/YYYY-MM-DD_视频名/剪口播/
+output/YYYY-MM-DD_视频名/语音剪辑/
 ├── 1_转录/
 │   ├── audio.mp3
 │   ├── audio_url.txt
@@ -268,13 +269,21 @@ output/YYYY-MM-DD_视频名/剪口播/
 
 审核页支持点击定位、双击选中、按住 Shift 批量选择和确认后执行剪辑。
 
-### 字幕
+### 外挂字幕
 
 ```text
-$videocut:字幕 /path/to/video.mp4
+$videocut:外挂字幕 /path/to/video.mp4
 ```
 
-字幕模块会使用 `字幕/词典.txt` 做术语纠错。剪口播转录脚本也会读取同一份词典作为火山热词。
+外挂字幕模块会使用 `字幕/词典.txt` 或 `VOLCENGINE_HOTWORDS_FILE` 做个人热词校对，并通过大模型语义复核后导出与视频同名的 `.srt` 和 `.vtt`。它只生成字幕文件，不把字幕烧进视频。
+
+### 烧录字幕
+
+```text
+$videocut:烧录字幕 /path/to/video.mp4
+```
+
+字幕模块会使用 `字幕/词典.txt` 做术语纠错。语音剪辑转录脚本也会读取同一份词典作为火山热词。
 
 ### 高清化
 
@@ -308,7 +317,7 @@ videocut-skills/
 ├── 安装/
 │   ├── SKILL.md
 │   └── agents/openai.yaml
-├── 剪口播/
+├── 语音剪辑/
 │   ├── SKILL.md
 │   ├── agents/openai.yaml
 │   ├── fixtures/
@@ -337,6 +346,13 @@ videocut-skills/
 │   ├── agents/openai.yaml
 │   ├── scripts/subtitle_server.js
 │   └── 词典.txt
+├── 外挂字幕/
+│   ├── SKILL.md
+│   ├── README.md
+│   ├── agents/openai.yaml
+│   ├── references/semantic_review.md
+│   ├── scripts/build_reviewed_subtitles.js
+│   └── scripts/export_external_subtitles.js
 ├── 高清化/
 │   ├── SKILL.md
 │   ├── agents/openai.yaml
